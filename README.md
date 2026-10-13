@@ -145,9 +145,20 @@ bash scripts/setup-multi-agent.sh --host codex
 bash scripts/setup-multi-agent.sh --host codex --apply
 ```
 
-Cursor and Windsurf use workspace-local skill discovery. Marketplace setup,
-every supported host, vault adoption, upgrades, and uninstall steps are covered
-in the [full installation guide](docs/install-guide.md).
+For GitHub Copilot Agent in VS Code Remote WSL, open the checkout from Ubuntu
+with `code .`, then preview and apply workspace-local skill links:
+
+```bash
+bash scripts/setup-multi-agent.sh --host copilot --workspace "$PWD"
+bash scripts/setup-multi-agent.sh --host copilot --workspace "$PWD" --apply
+bash scripts/setup-multi-agent.sh --host copilot --workspace "$PWD" --check
+```
+
+Copilot discovers project skills under `.github/skills/`; skill discovery does
+not guarantee automatic invocation for every matching prompt. Cursor and
+Windsurf also use workspace-local skill discovery. Marketplace setup, every
+supported host, vault adoption, upgrades, and uninstall steps are covered in
+the [full installation guide](docs/install-guide.md).
 
 ## 15 skills, one system
 

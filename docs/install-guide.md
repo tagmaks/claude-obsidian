@@ -78,6 +78,23 @@ bash scripts/setup-multi-agent.sh --host cursor --host windsurf \
   --workspace <workspace> --apply
 ```
 
+GitHub Copilot Agent in VS Code uses project skills under
+`<workspace>/.github/skills/`. From a VS Code Remote WSL session, preview,
+apply, and check the workspace-local links with:
+
+```bash
+bash scripts/setup-multi-agent.sh --host copilot --workspace "$PWD"
+bash scripts/setup-multi-agent.sh --host copilot --workspace "$PWD" --apply
+bash scripts/setup-multi-agent.sh --host copilot --workspace "$PWD" --check
+```
+
+The links point to the canonical `skills/<name>/` directories in this checkout.
+They are local integration state, so a pull that updates the canonical skills
+is reflected without copying or synchronizing another set of files. Copilot
+skill discovery makes skills available but does not guarantee automatic
+invocation. Copilot is also included in `--host all`; this option includes
+workspace-local hosts and therefore needs `--workspace`.
+
 ZCode is opt-in and user-level (no `--workspace` needed):
 
 ```bash
@@ -95,6 +112,7 @@ Gemini:    ~/.gemini/skills/<name>          -> <product-repository>/skills/<name
 ZCode:     ~/.zcode/skills/<name>           -> <product-repository>/skills/<name>
 Cursor:    <workspace>/.cursor/skills/<name>   -> <product-repository>/skills/<name>
 Windsurf:  <workspace>/.windsurf/skills/<name> -> <product-repository>/skills/<name>
+Copilot:   <workspace>/.github/skills/<name>   -> <product-repository>/skills/<name>
 ```
 
 ## Create a new vault

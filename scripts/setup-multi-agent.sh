@@ -14,11 +14,11 @@ HOST_COUNT=0
 usage() {
   cat <<'EOF'
 Usage: scripts/setup-multi-agent.sh [--check|--dry-run|--apply]
-       [--host codex|opencode|gemini|zcode|cursor|windsurf|all] [--workspace PATH]
+       [--host codex|opencode|gemini|zcode|cursor|windsurf|copilot|all] [--workspace PATH]
 
 Default: dry-run for Codex, OpenCode, and Gemini user-level per-skill links.
-ZCode, Cursor and Windsurf are opt-in and require an explicit --host selection;
-Cursor and Windsurf also require an explicit --workspace destination.
+ZCode, Cursor, Windsurf, and Copilot are opt-in and require an explicit --host.
+Cursor, Windsurf, and Copilot also require an explicit --workspace destination.
 Existing files and links pointing elsewhere are never replaced.
 EOF
 }
@@ -54,8 +54,8 @@ fi
 expanded=()
 for host in "${HOSTS[@]}"; do
   case "$host" in
-    all) expanded+=(codex opencode gemini cursor windsurf) ;;
-    codex|opencode|gemini|zcode|cursor|windsurf) expanded+=("$host") ;;
+    all) expanded+=(codex opencode gemini cursor windsurf copilot) ;;
+    codex|opencode|gemini|zcode|cursor|windsurf|copilot) expanded+=("$host") ;;
     *) echo "ERROR: unsupported host: $host" >&2; exit 2 ;;
   esac
 done
@@ -163,13 +163,16 @@ for host in "${expanded[@]}"; do
     opencode) destination_root="$HOME/.config/opencode/skills" ;;
     gemini) destination_root="$HOME/.gemini/skills" ;;
     zcode) destination_root="$HOME/.zcode/skills" ;;
-    cursor|windsurf)
+    copilot|cursor|windsurf)
       if [ -z "$WORKSPACE" ]; then
         echo "ERROR: --host $host requires --workspace PATH" >&2
         status=2
         continue
       fi
-      destination_root="$WORKSPACE/.$host/skills"
+      case "$host" in
+        copilot) destination_root="$WORKSPACE/.github/skills" ;;
+        cursor|windsurf) destination_root="$WORKSPACE/.$host/skills" ;;
+      esac
       ;;
   esac
   for source in "$SKILLS_DIR"/*; do
@@ -178,7 +181,7 @@ for host in "${expanded[@]}"; do
     skill_name="$(basename "$source")"
     confinement_root=""
     case "$host" in
-      cursor|windsurf) confinement_root="$WORKSPACE" ;;
+      copilot|cursor|windsurf) confinement_root="$WORKSPACE" ;;
     esac
     inspect_link "$host" "$source" "$destination_root/$skill_name" "$confinement_root"
   done

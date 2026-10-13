@@ -175,6 +175,172 @@ class SetupMultiAgentTests(unittest.TestCase):
                 self.assertIn("parent is a symlink", result.stderr)
                 self.assertEqual([], list(outside.iterdir()))
 
+    def test_copilot_workspace_host_requires_workspace(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            result = self.invoke(home, "--dry-run", "--host", "copilot")
+            self.assertEqual(2, result.returncode)
+            self.assertIn("--workspace", result.stderr)
+            self.assertFalse((home / ".github").exists())
+
+    def test_copilot_dry_run_and_check_do_not_create_links(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            workspace = base / "workspace"
+            workspace.mkdir()
+
+            preview = self.invoke(
+                base,
+                "--dry-run",
+                "--host",
+                "copilot",
+                "--workspace",
+                str(workspace),
+            )
+            self.assertEqual(0, preview.returncode, preview.stderr)
+            self.assertEqual(15, preview.stdout.count("PLANNED copilot "))
+            self.assertFalse((workspace / ".github/skills").exists())
+
+            check = self.invoke(
+                base,
+                "--check",
+                "--host",
+                "copilot",
+                "--workspace",
+                str(workspace),
+            )
+            self.assertEqual(1, check.returncode, check.stderr)
+            self.assertEqual(15, check.stdout.count("PLANNED copilot "))
+            self.assertFalse((workspace / ".github/skills").exists())
+
+    def test_copilot_host_links_canonical_skills_idempotently(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            workspace = base / "workspace"
+            workspace.mkdir()
+            skill_root = workspace / ".github/skills"
+
+            first = self.invoke(
+                base,
+                "--apply",
+                "--host",
+                "copilot",
+                "--workspace",
+                str(workspace),
+            )
+            self.assertEqual(0, first.returncode, first.stderr)
+
+            expected = sorted(
+                path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")
+            )
+            self.assertEqual(15, len(expected))
+            discovered = sorted(
+                path.parent.name for path in skill_root.glob("*/SKILL.md")
+            )
+            self.assertEqual(expected, discovered)
+            for skill_name in expected:
+                link = skill_root / skill_name
+                self.assertTrue(link.is_symlink(), skill_name)
+                self.assertEqual(ROOT / "skills" / skill_name, link.resolve())
+
+            second = self.invoke(
+                base,
+                "--apply",
+                "--host",
+                "copilot",
+                "--workspace",
+                str(workspace),
+            )
+            self.assertEqual(0, second.returncode, second.stderr)
+            self.assertEqual(15, second.stdout.count("READY copilot "))
+
+            check = self.invoke(
+                base,
+                "--check",
+                "--host",
+                "copilot",
+                "--workspace",
+                str(workspace),
+            )
+            self.assertEqual(0, check.returncode, check.stderr)
+            self.assertEqual(15, check.stdout.count("READY copilot "))
+
+    def test_copilot_conflict_is_preserved(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            workspace = base / "workspace"
+            conflict = workspace / ".github/skills/wiki"
+            conflict.mkdir(parents=True)
+            marker = conflict / "mine"
+            marker.write_text("preserve", encoding="utf-8")
+
+            result = self.invoke(
+                base,
+                "--apply",
+                "--host",
+                "copilot",
+                "--workspace",
+                str(workspace),
+            )
+
+            self.assertEqual(2, result.returncode)
+            self.assertEqual("preserve", marker.read_text(encoding="utf-8"))
+            self.assertTrue((workspace / ".github/skills/save/SKILL.md").is_file())
+
+    def test_copilot_workspace_parent_symlinks_cannot_redirect_apply(self) -> None:
+        for symlink_component in (".github", ".github/skills"):
+            with (
+                self.subTest(component=symlink_component),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                base = Path(directory)
+                workspace = base / "workspace"
+                outside = base / "outside"
+                workspace.mkdir()
+                outside.mkdir()
+                link = workspace / symlink_component
+                link.parent.mkdir(parents=True, exist_ok=True)
+                link.symlink_to(outside, target_is_directory=True)
+
+                for mode in ("--dry-run", "--apply"):
+                    with self.subTest(mode=mode):
+                        result = self.invoke(
+                            base,
+                            mode,
+                            "--host",
+                            "copilot",
+                            "--workspace",
+                            str(workspace),
+                        )
+                        self.assertEqual(2, result.returncode)
+                        self.assertIn("parent is a symlink", result.stderr)
+                        self.assertEqual([], list(outside.iterdir()))
+
+    def test_all_includes_copilot(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            workspace = base / "workspace"
+            workspace.mkdir()
+
+            result = self.invoke(
+                base,
+                "--apply",
+                "--host",
+                "all",
+                "--workspace",
+                str(workspace),
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr)
+            skill_root = workspace / ".github/skills"
+            expected = sorted(
+                path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")
+            )
+            self.assertEqual(
+                expected,
+                sorted(path.parent.name for path in skill_root.glob("*/SKILL.md")),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

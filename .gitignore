@@ -110,6 +110,7 @@ claude-canvas/
 # Workspace-local Agent Skills links created by setup-multi-agent.sh
 .cursor/skills/
 .windsurf/skills/
+.github/skills/
 
 # User-specific attachments
 _attachments/

@@ -15,5 +15,9 @@ When editing:
 - Add hermetic regression tests for behavior changes and run `make test`.
 - Do not add secrets, private paths, unsupported capability claims, or duplicate
   command wrappers.
+- Use the task-relevant discovered Agent Skill when its description matches;
+  canonical skill files remain under `skills/`.
+- Run repository commands and vault mutations in VS Code Remote WSL. Native
+  Windows remains read-only/dry-run for vault operations.
 
 Public canonical: https://github.com/AgriciDaniel/claude-obsidian

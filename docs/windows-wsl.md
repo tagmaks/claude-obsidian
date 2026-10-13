@@ -60,6 +60,31 @@ reduced-guarantees flag — is under consideration in
 [#151](https://github.com/AgriciDaniel/claude-obsidian/issues/151). If WSL is a
 blocker for you, that issue is the place to weigh in.
 
+## VS Code Copilot in WSL
+
+To use GitHub Copilot Agent with the full Linux workflow, open the product
+checkout in VS Code Remote WSL. From an Ubuntu shell in the checkout, run
+`code .`; make sure the GitHub Copilot extension is enabled in the WSL
+extension host.
+
+Preview the workspace-local Copilot skill links before applying them:
+
+```bash
+bash scripts/setup-multi-agent.sh --host copilot --workspace "$PWD"
+bash scripts/setup-multi-agent.sh --host copilot --workspace "$PWD" --apply
+bash scripts/setup-multi-agent.sh --host copilot --workspace "$PWD" --check
+```
+
+The links expose the canonical `skills/<name>/` directories through
+`.github/skills/<name>`. After applying them, inspect Agent Customizations in
+VS Code to confirm the skills are discovered. Discovery makes skills available
+but does not guarantee that Copilot invokes one for every matching prompt.
+
+Run the product CLI and tests in the Remote WSL session. Keep the user vault
+separate from the product checkout, and use the existing inspected transaction
+workflow for vault writes; native Windows remains read-only/dry-run for those
+operations.
+
 ## WSL troubleshooting
 
 WSL being "installed" does not always mean WSL is working. Symptoms and checks,
